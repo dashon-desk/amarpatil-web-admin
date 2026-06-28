@@ -3,10 +3,22 @@
  */
 
 const API_BASE = (import.meta as any).env.VITE_API_URL || "https://photo-crm-bbla.onrender.com/api";
+const TENANT_DOMAIN = window.location.hostname;
 
 export async function fetchFromAPI(endpoint: string, options?: RequestInit) {
   try {
-    const res = await fetch(`${API_BASE}${endpoint}`, options);
+    const headers = {
+      ...(options?.headers || {}),
+    } as Record<string, string>;
+    console.log('TENANT_DOMAIN', TENANT_DOMAIN)
+    if (TENANT_DOMAIN) {
+      headers["x-tenant-domain"] = TENANT_DOMAIN;
+    }
+
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    });
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
