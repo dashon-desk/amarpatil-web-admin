@@ -216,7 +216,7 @@ export default function LeadDetailDrawer({ lead, onClose, onRequireBooking }) {
                       </div>
                     </div>
                     <a
-                      href={`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/quotations/pdf/${q._id}?token=${localStorage.getItem('token')}`}
+                      href={`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/quotations/pdf/${q._id}?token=${localStorage.getItem('token')}&tenantDomain=${window.location.hostname}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 text-slate-400 hover:text-cyan-500 bg-white dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 rounded-full transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-sm"

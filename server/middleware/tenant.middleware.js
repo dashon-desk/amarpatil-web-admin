@@ -128,6 +128,14 @@ const resolveTenantId = (domain) => {
 const tenantMiddleware = async (req, res, next) => {
   let requestDomain = req.headers["x-tenant-domain"];
 
+  if (!requestDomain && req.query.tenantDomain) {
+    requestDomain = req.query.tenantDomain;
+  }
+
+  if (!requestDomain && req.query.tenant) {
+    requestDomain = req.query.tenant;
+  }
+
   if (!requestDomain && req.headers.origin) {
     requestDomain = req.headers.origin;
   }
