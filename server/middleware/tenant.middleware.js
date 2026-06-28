@@ -138,18 +138,11 @@ const tenantMiddleware = async (req, res, next) => {
 
   let tenantId = resolveTenantId(requestDomain);
 
-  // Local development override: if host is localhost/127.0.0.1 and DEFAULT_TENANT_DOMAIN is set, prioritize it!
-  const hostDomain = normalizeDomain(req.headers.host || "");
-  if (hostDomain === "localhost" || hostDomain === "127.0.0.1") {
-    if (process.env.DEFAULT_TENANT_DOMAIN) {
-      tenantId = process.env.DEFAULT_TENANT_DOMAIN;
-    }
-  }
-
   // Local development / testing hostname fallback
   if (!tenantId) {
+    const hostDomain = normalizeDomain(req.headers.host || "");
     if (!hostDomain || hostDomain === "localhost" || hostDomain === "127.0.0.1") {
-      tenantId = Object.keys(tenantsConfig)[0];
+      tenantId = process.env.DEFAULT_TENANT_DOMAIN || Object.keys(tenantsConfig)[0];
     }
   }
 

@@ -2,10 +2,25 @@ const multer = require("multer");
 const sharp = require("sharp");
 const cloudinary = require("../config/cloudinary");
 const { Readable } = require("stream");
+const { asyncLocalStorage } = require("./tenant.middleware");
+
+const wrapMiddleware = (middlewareFn) => {
+  return (req, res, next) => {
+    const store = asyncLocalStorage.getStore();
+    if (!store) {
+      return middlewareFn(req, res, next);
+    }
+    middlewareFn(req, res, (err) => {
+      asyncLocalStorage.run(store, () => {
+        next(err);
+      });
+    });
+  };
+};
 
 // Store files in memory so Sharp can manipulate the buffer
 const storage = multer.memoryStorage();
-const upload = multer({
+const rawUpload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB limit
   fileFilter: (req, file, cb) => {
@@ -15,6 +30,20 @@ const upload = multer({
       cb(new Error("Only images are allowed"), false);
     }
   },
+});
+
+// Proxy multer instance to automatically wrap middleware calls
+const upload = new Proxy(rawUpload, {
+  get(target, prop, receiver) {
+    const value = Reflect.get(target, prop, receiver);
+    if (typeof value === "function" && ["single", "array", "fields", "any", "none"].includes(prop)) {
+      return function (...args) {
+        const middleware = value.apply(target, args);
+        return wrapMiddleware(middleware);
+      };
+    }
+    return value;
+  }
 });
 
 const processAndUploadImage = async (req, res, next) => {
@@ -54,7 +83,7 @@ const processAndUploadImage = async (req, res, next) => {
     if (req.files && Array.isArray(req.files)) {
       await Promise.all(req.files.map(file => processFile(file)));
     }
-    
+
     // 3. If upload.fields() was used
     if (req.files && !Array.isArray(req.files)) {
       const promises = [];

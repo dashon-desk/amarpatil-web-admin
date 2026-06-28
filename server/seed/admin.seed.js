@@ -30,8 +30,21 @@ const seedAdmin = async () => {
 
   console.log(`Connecting to database for tenant [${tenantId}]...`);
   
+  // Extract database name from URI
+  let dbName = undefined;
   try {
-    await mongoose.connect(mongodbUri);
+    const cleanUri = mongodbUri.includes("://") ? mongodbUri : `mongodb://${mongodbUri}`;
+    const urlObj = new URL(cleanUri);
+    dbName = urlObj.pathname.slice(1).split("?")[0];
+  } catch (e) {
+    const match = mongodbUri.match(/\/([^/?]+)(\?|$)/);
+    if (match) dbName = match[1];
+  }
+
+  try {
+    console.log("Attempting mongoose.connect with dbName:", dbName);
+    await mongoose.connect(mongodbUri, { dbName });
+    console.log("Mongoose connected. Connection DB name:", mongoose.connection.name);
     console.log(`Connected to database: ${mongoose.connection.db.databaseName}`);
 
     const existing = await User.findOne({ email });

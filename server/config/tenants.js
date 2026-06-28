@@ -11,7 +11,7 @@ module.exports = {
       "amarpatil-web-admin-q7qq.vercel.app",
       "amarpatil-web-admin.vercel.app" // Add website domains here
     ],
-    MONGODB_URI: "mongodb+srv://clientdeskteam_db_user:WDcf17sFy2efzPEq@amarpatilfinal.bzkt5bn.mongodb.net/amarpatil_prod?retryWrites=true&w=majority",
+    MONGODB_URI: "mongodb+srv://clientdeskteam_db_user:WDcf17sFy2efzPEq@amarpatilfinal.bzkt5bn.mongodb.net",
     ADMIN_EMAIL: "amarpatil@gmail.com",
     ADMIN_PASSWORD: "Dashon@2025",
     JWT_SECRET: "random#secret_amarpatil",
@@ -28,7 +28,7 @@ module.exports = {
       "amarpatil2admin.vercel.app",
       "amarpatilwebsite2.vercel.app" // Add website domains here
     ],
-    MONGODB_URI: "mongodb+srv://dashrathbshinde:dashrath@cluster0.xgxtuqr.mongodb.net/skymotionphotography-portfolio?retryWrites=true&w=majority",
+    MONGODB_URI: "mongodb+srv://dashrathbshinde:dashrath@cluster0.xgxtuqr.mongodb.net/skymotionphotography-portfolio",
     ADMIN_EMAIL: "amarp.team@gmail.com",
     ADMIN_PASSWORD: "Dashon@2025",
     JWT_SECRET: "random#secret_skymotion",
