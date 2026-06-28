@@ -10,6 +10,12 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    const tenantDomain = window.location.hostname;
+    if (tenantDomain) {
+      config.headers["x-tenant-domain"] = tenantDomain;
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
