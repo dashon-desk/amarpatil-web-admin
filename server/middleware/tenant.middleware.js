@@ -9,6 +9,15 @@ const tenantConnections = {};
 const originalModel = mongoose.model.bind(mongoose);
 const schemas = {};
 
+// Override connection model method to automatically compile schemas on tenant connections during population
+const originalConnectionModel = mongoose.Connection.prototype.model;
+mongoose.Connection.prototype.model = function (name, schema, collection) {
+  if (!schema && !this.models[name] && schemas[name]) {
+    schema = schemas[name];
+  }
+  return originalConnectionModel.call(this, name, schema, collection);
+};
+
 mongoose.model = function (name, schema, collection) {
   if (schema) {
     schemas[name] = schema;
