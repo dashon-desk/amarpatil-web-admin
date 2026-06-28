@@ -1,20 +1,35 @@
 const webpush = require("web-push");
+const { getTenantConfig } = require("../middleware/tenant.middleware");
 
-webpush.setVapidDetails(
-  "mailto:mafpco.dev@gmail.com", // Found in env referencing admin email usually.
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
+// Set default fallback VAPID details
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    "mailto:mafpco.dev@gmail.com",
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
-exports.sendWebPush = async (subscription, data) => {
+exports.sendWebPush = async (subscription, data, tenantConfigOverride = null) => {
+  const tenantConfig = tenantConfigOverride || getTenantConfig();
+
   const payload = JSON.stringify({
     title: data.title,
     message: data.message,
     url: data.redirectUrl || "/admin",
   });
 
+  const options = {};
+  if (tenantConfig && tenantConfig.VAPID_PUBLIC_KEY && tenantConfig.VAPID_PRIVATE_KEY) {
+    options.vapidDetails = {
+      subject: "mailto:mafpco.dev@gmail.com",
+      publicKey: tenantConfig.VAPID_PUBLIC_KEY,
+      privateKey: tenantConfig.VAPID_PRIVATE_KEY
+    };
+  }
+
   try {
-    await webpush.sendNotification(subscription, payload);
+    await webpush.sendNotification(subscription, payload, options);
   } catch (error) {
     if (error.statusCode === 410 || error.statusCode === 404) {
       // The subscription has expired or is no longer valid

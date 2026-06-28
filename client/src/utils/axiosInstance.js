@@ -12,6 +12,7 @@ axiosInstance.interceptors.request.use(
     }
 
     const tenantDomain = window.location.hostname;
+    console.log("tenantDomain", tenantDomain);
     if (tenantDomain) {
       config.headers["x-tenant-domain"] = tenantDomain;
     }

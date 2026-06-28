@@ -23,32 +23,44 @@ const io = socketModule.init(server);
 // Init Cron Reminders
 cron.schedule("* * * * *", async () => {
   const now = new Date();
-  // Find reminders due now or past due that haven't been processed
-  const reminders = await Reminder.find({ due: { $lte: now }, isProcessed: false });
+  const tenantsConfig = require("./config/tenants");
+  const { getTenantConnection, asyncLocalStorage } = require("./middleware/tenant.middleware");
 
-  if (reminders.length > 0) {
-    const admins = socketModule.getAdmins();
-    for (const rem of reminders) {
-      const notificationData = {
-        title: "Reminder ⏰",
-        message: rem.message,
-        type: "reminder",
-        redirectUrl: `/admin/reminders`, // you can update later if there is a reminder page
-      };
+  for (const domain of Object.keys(tenantsConfig)) {
+    const config = tenantsConfig[domain];
+    try {
+      const connection = await getTenantConnection(domain, config.MONGODB_URI);
 
-      const savedNotif = await Notification.create(notificationData);
+      await asyncLocalStorage.run({ connection, config, tenant: domain }, async () => {
+        const reminders = await Reminder.find({ due: { $lte: now }, isProcessed: false });
 
-      admins.forEach(admin => {
-        io.to(admin.socketId).emit("newNotification", savedNotif);
+        if (reminders.length > 0) {
+          const admins = socketModule.getAdmins(domain);
+          for (const rem of reminders) {
+            const notificationData = {
+              title: "Reminder ⏰",
+              message: rem.message,
+              type: "reminder",
+              redirectUrl: `/admin/reminders`,
+            };
+
+            const savedNotif = await Notification.create(notificationData);
+
+            admins.forEach(admin => {
+              io.to(admin.socketId).emit("newNotification", savedNotif);
+            });
+
+            const subscriptions = await Subscription.find();
+            Promise.all(subscriptions.map(sub => webpushUtil.sendWebPush(sub, notificationData)))
+              .catch(err => console.error(`Web Push broadcast issue on Reminder for tenant ${domain}:`, err));
+
+            rem.isProcessed = true;
+            await rem.save();
+          }
+        }
       });
-
-      // Background Web Push Broadcast
-      const subscriptions = await Subscription.find();
-      Promise.all(subscriptions.map(sub => webpushUtil.sendWebPush(sub, notificationData)))
-        .catch(err => console.error("Web Push broadcast issue on Reminder:", err));
-
-      rem.isProcessed = true;
-      await rem.save();
+    } catch (err) {
+      console.error(`Error running cron reminders for tenant ${domain}:`, err);
     }
   }
 });
