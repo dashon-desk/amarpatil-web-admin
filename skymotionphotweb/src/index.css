@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Anek+Gujarati:wght@100..800&family=Playfair+Display:wght@400..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Syne:wght@400..800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-navy-dark: #060708;
+  --color-gold-warm: #E5A93B;
+  --color-luxury-cream: #121417;
+  --color-luxury-dark: #0A0B0D;
+
+  /* Fonts */
+  --font-primary: "Poppins", "Anek Gujarati", system-ui, sans-serif;
+  --font-secondary: "Syne", "Playfair Display", Georgia, serif;
+
+  --font-sans: var(--font-primary);
+  --font-serif: var(--font-secondary);
+  --font-anek: "Anek Gujarati", sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    background-color: #060708;
+    color: #E2E8F0;
+  }
+
+  body {
+    font-family: var(--font-primary);
+    background-color: #060708;
+    color: #E2E8F0;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-secondary);
+    font-weight: 700;
+    color: #FFFFFF;
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background-color: #E5A93B;
+    color: #060708;
+  }
+}
+
+/* Premium utility classes */
+.glass-premium {
+  background: rgba(10, 11, 13, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-premium-light {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #FFE0A3 0%, #E5A93B 50%, #B8811D 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.border-glow-hover {
+  transition: all 0.3s ease;
+}
+
+.border-glow-hover:hover {
+  border-color: rgba(229, 169, 59, 0.4);
+  box-shadow: 0 0 15px rgba(229, 169, 59, 0.1);
+}
+
+/* Premium scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #060708;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E5A93B;
+  border-radius: 4px;
+  border: 2px solid #060708;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FFFFFF;
+}

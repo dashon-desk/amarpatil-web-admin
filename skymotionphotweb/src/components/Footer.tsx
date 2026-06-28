@@ -1,0 +1,98 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowUp } from "lucide-react";
+import { getSiteSettings } from "../utils/api";
+
+export default function Footer() {
+  const [settings, setSettings] = useState<any>(null);
+
+  useEffect(() => {
+    getSiteSettings()
+      .then((data) => {
+        if (data && data.businessName) {
+          setSettings(data);
+        }
+      })
+      .catch((err) => console.error("Error loading site settings in footer:", err));
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const footerItems = [
+    { label: "Home", to: "/" },
+    { label: "Gallery", to: "/gallery" },
+    { label: "Stories", to: "/stories" },
+    { label: "About Us", to: "/about" },
+    { label: "Contact Us", to: "/contact" }
+  ];
+
+  return (
+    <footer id="footer-section" className="bg-navy-dark text-white/95 border-t border-white/5 py-12 md:py-16">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-8">
+
+        {/* Left: Logo, copyright, dev credits */}
+        <div className="flex flex-col items-center md:items-start space-y-4 text-center md:text-left">
+          {/* Logo container */}
+          <div className="mb-1">
+            {settings?.logo ? (
+              <img src={settings.logo} alt="Logo" className="h-[50px] w-auto object-contain mr-2" />
+            ) : (
+              <div className="flex flex-col text-left">
+                <span className="font-secondary text-xl font-bold tracking-[0.2em] text-white">
+                  {settings?.businessName || "SKYMOTION"}
+                </span>
+                <span className="font-primary text-[8px] tracking-[0.3em] text-gold-warm uppercase font-medium">
+                  PREMIUM ARCHIVES
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-[10px] text-white/50 tracking-wider">
+            <span>© {new Date().getFullYear()} {settings?.businessName || "SkyMotion Photography"}. All rights reserved.</span>
+          </div>
+
+          <div className="text-[10px] text-white/40 tracking-wider font-primary">
+            Developed by{" "}
+            <a
+              href="https://www.dashonsolutions.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gold-warm hover:text-white duration-300 font-semibold underline underline-offset-2"
+            >
+              Dashon Solutions Pvt. Ltd.
+            </a>
+          </div>
+        </div>
+
+        {/* Right: Nav Links + Scroll to Top */}
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+          <nav className="flex flex-wrap justify-center items-center gap-4 sm:gap-6">
+            {footerItems.map((item) => (
+              <Link
+                id={`footer-link-${item.label.toLowerCase().replace(" ", "-")}`}
+                key={item.label}
+                to={item.to}
+                className="font-primary text-[10px] text-white/70 hover:text-gold-warm duration-300 transition-colors uppercase tracking-widest font-semibold"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <button
+            id="scroll-to-top-btn"
+            onClick={scrollToTop}
+            className="p-2.5 bg-white/5 hover:bg-gold-warm hover:text-navy-dark text-white duration-300 rounded-full cursor-pointer shadow-md animate-none border border-white/5"
+            aria-label="Back to Top"
+          >
+            <ArrowUp className="w-4 h-4" />
+          </button>
+        </div>
+
+      </div>
+    </footer>
+  );
+}
