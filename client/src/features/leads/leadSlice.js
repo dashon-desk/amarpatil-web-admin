@@ -38,6 +38,18 @@ export const updateLeadStatus = createAsyncThunk(
   }
 );
 
+export const updateLead = createAsyncThunk(
+  "leads/updateLead",
+  async ({ id, leadData }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.put(`/leads/${id}`, leadData);
+      return response.data.lead;
+    } catch (error) {
+      return rejectWithValue(error.response.data.message || error.message);
+    }
+  }
+);
+
 export const deleteLead = createAsyncThunk(
   "leads/deleteLead",
   async (id, { rejectWithValue }) => {
@@ -79,6 +91,13 @@ const leadSlice = createSlice({
       })
       // Update Lead Status (Optimistic/Pessimistic)
       .addCase(updateLeadStatus.fulfilled, (state, action) => {
+        const index = state.leads.findIndex((l) => l._id === action.payload._id);
+        if (index !== -1) {
+          state.leads[index] = action.payload;
+        }
+      })
+      // Update Lead
+      .addCase(updateLead.fulfilled, (state, action) => {
         const index = state.leads.findIndex((l) => l._id === action.payload._id);
         if (index !== -1) {
           state.leads[index] = action.payload;

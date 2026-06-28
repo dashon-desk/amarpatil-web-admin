@@ -12,6 +12,7 @@ const SiteSettings = () => {
     meta: { title: "", description: "", keywords: [] },
     bankDetails: { accountName: "", bankName: "", accountNumber: "", ifscCode: "", upiId: "" },
     colors: { primary: "#6B1F2A", secondary: "#4A1620", accent: "#B8924A" },
+    termsAndConditions: "",
     showTeam: true,
   });
   const [files, setFiles] = useState({ logo: null, stamp: null, signature: null });
@@ -32,6 +33,7 @@ const SiteSettings = () => {
           meta: data.meta || { title: "", description: "", keywords: [] },
           bankDetails: data.bankDetails || { accountName: "", bankName: "", accountNumber: "", ifscCode: "", upiId: "" },
           colors: data.colors || { primary: "#6B1F2A", secondary: "#4A1620", accent: "#B8924A" },
+          termsAndConditions: data.termsAndConditions ? data.termsAndConditions.join("\n") : "",
           showTeam: data.showTeam !== undefined ? data.showTeam : true
         });
         setPreviews({
@@ -81,6 +83,7 @@ const SiteSettings = () => {
       data.append("meta", JSON.stringify(formData.meta));
       data.append("bankDetails", JSON.stringify(formData.bankDetails));
       data.append("colors", JSON.stringify(formData.colors));
+      data.append("termsAndConditions", JSON.stringify(formData.termsAndConditions.split("\n").map(t => t.trim()).filter(Boolean)));
       data.append("showTeam", formData.showTeam);
 
       if (files.logo) data.append("logo", files.logo);
@@ -210,6 +213,18 @@ const SiteSettings = () => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">UPI ID (for dynamic QR generation)</label>
                 <input type="text" placeholder="e.g. business@upi" value={formData.bankDetails?.upiId || ""} onChange={(e) => handleChange(e, 'bankDetails', 'upiId')} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-cyan-500" />
               </div>
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mt-8 mb-4">Default Terms &amp; Conditions</h3>
+            <p className="text-slate-500 text-xs mb-4">Add terms and conditions to be populated automatically on new quotations (one bullet per line).</p>
+            <div>
+              <textarea
+                rows="5"
+                value={formData.termsAndConditions}
+                onChange={(e) => handleChange(e, null, 'termsAndConditions')}
+                placeholder="Enter default terms here (one per line)..."
+                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-cyan-500 text-sm resize-none"
+              ></textarea>
             </div>
           </div>
         </div>

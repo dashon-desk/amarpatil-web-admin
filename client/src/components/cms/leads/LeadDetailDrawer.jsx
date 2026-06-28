@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, User, Phone, Mail, Calendar, Camera, Package, MessageSquare, Clock, FileText, Download, Plus } from "lucide-react";
 import { useDispatch } from "react-redux";
-import { updateLeadStatus } from "../../../features/leads/leadSlice";
+import { updateLeadStatus, updateLead } from "../../../features/leads/leadSlice";
 import axiosInstance from "../../../utils/axiosInstance";
 import { toast } from "react-toastify";
 import QuotationForm from "./QuotationForm";
@@ -29,6 +29,32 @@ export default function LeadDetailDrawer({ lead, onClose, onRequireBooking }) {
   const [isQuotationFormOpen, setIsQuotationFormOpen] = useState(false);
   const [isSendDrawerOpen, setIsSendDrawerOpen] = useState(false);
 
+  // Edit fields states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editWhatsapp, setEditWhatsapp] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editShootType, setEditShootType] = useState("");
+  const [editEventDate, setEditEventDate] = useState("");
+  const [editMessage, setEditMessage] = useState("");
+  const [savingEdits, setSavingEdits] = useState(false);
+
+  useEffect(() => {
+    if (lead) {
+      setEditName(lead.name || "");
+      setEditPhone(lead.phone || "");
+      setEditWhatsapp(lead.whatsapp || "");
+      setEditEmail(lead.email || "");
+      setEditShootType(lead.shootType || "");
+      setEditEventDate(lead.eventDate ? new Date(lead.eventDate).toISOString().substring(0, 10) : "");
+      setEditMessage(lead.message || "");
+      setNotesList(lead.notes || []);
+      setStatus(lead.status || "new");
+      setIsEditing(false);
+    }
+  }, [lead]);
+
   useEffect(() => {
     if (lead?._id) {
       axiosInstance.get(`/quotations/lead/${lead._id}`).then(({ data }) => setQuotations(data.quotations)).catch(() => { });
@@ -36,6 +62,32 @@ export default function LeadDetailDrawer({ lead, onClose, onRequireBooking }) {
   }, [lead]);
 
   if (!lead) return null;
+
+  const handleSaveEdits = async () => {
+    if (!editName.trim()) return toast.warning("Name is required.");
+    if (!editPhone.trim()) return toast.warning("Phone number is required.");
+
+    setSavingEdits(true);
+    try {
+      const payload = {
+        name: editName,
+        phone: editPhone,
+        whatsapp: editWhatsapp,
+        email: editEmail,
+        shootType: editShootType,
+        eventDate: editEventDate ? new Date(editEventDate) : null,
+        message: editMessage
+      };
+
+      await dispatch(updateLead({ id: lead._id, leadData: payload })).unwrap();
+      setIsEditing(false);
+      toast.success("Lead details updated successfully!");
+    } catch (err) {
+      toast.error(err || "Failed to update lead details.");
+    } finally {
+      setSavingEdits(false);
+    }
+  };
 
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value;
@@ -89,11 +141,37 @@ export default function LeadDetailDrawer({ lead, onClose, onRequireBooking }) {
           {/* Header */}
           <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
             <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider">
-              Lead Details
+              {isEditing ? "Edit Lead" : "Lead Details"}
             </h2>
-            <button onClick={onClose} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors">
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={handleSaveEdits}
+                    disabled={savingEdits}
+                    className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {savingEdits ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Edit
+                </button>
+              )}
+              <button onClick={onClose} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-8">
@@ -115,26 +193,42 @@ export default function LeadDetailDrawer({ lead, onClose, onRequireBooking }) {
                 <User className="w-4 h-4 mr-2" /> Client Details
               </h3>
               <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3 text-sm">
-                <div className="flex items-start">
+                <div className="flex items-center">
                   <span className="w-24 text-slate-500 font-medium">Name</span>
-                  <span className="text-slate-900 dark:text-white font-bold">{lead.name}</span>
+                  {isEditing ? (
+                    <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-2 py-1 rounded text-xs outline-none focus:border-cyan-500" />
+                  ) : (
+                    <span className="text-slate-900 dark:text-white font-bold">{lead.name}</span>
+                  )}
                 </div>
-                <div className="flex items-start">
+                <div className="flex items-center">
                   <span className="w-24 text-slate-500 font-medium">Phone</span>
-                  <a href={`tel:${lead.phone}`} className="text-cyan-500 hover:underline flex items-center"><Phone className="w-3 h-3 mr-1" />{lead.phone}</a>
+                  {isEditing ? (
+                    <input type="text" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-2 py-1 rounded text-xs outline-none focus:border-cyan-500" />
+                  ) : (
+                    <a href={`tel:${lead.phone}`} className="text-cyan-500 hover:underline flex items-center"><Phone className="w-3 h-3 mr-1" />{lead.phone}</a>
+                  )}
                 </div>
-                {lead.whatsapp && lead.whatsapp !== lead.phone && (
-                  <div className="flex items-start">
-                    <span className="w-24 text-slate-500 font-medium">WhatsApp</span>
-                    <a href={`https://wa.me/${lead.whatsapp}`} target="_blank" rel="noreferrer" className="text-emerald-500 hover:underline">{lead.whatsapp}</a>
-                  </div>
-                )}
-                {lead.email && (
-                  <div className="flex items-start">
-                    <span className="w-24 text-slate-500 font-medium">Email</span>
-                    <a href={`mailto:${lead.email}`} className="text-cyan-500 hover:underline flex items-center"><Mail className="w-3 h-3 mr-1" />{lead.email}</a>
-                  </div>
-                )}
+                <div className="flex items-center">
+                  <span className="w-24 text-slate-500 font-medium">WhatsApp</span>
+                  {isEditing ? (
+                    <input type="text" value={editWhatsapp} onChange={(e) => setEditWhatsapp(e.target.value)} className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-2 py-1 rounded text-xs outline-none focus:border-cyan-500" />
+                  ) : (
+                    lead.whatsapp ? (
+                      <a href={`https://wa.me/${lead.whatsapp}`} target="_blank" rel="noreferrer" className="text-emerald-500 hover:underline">{lead.whatsapp}</a>
+                    ) : "—"
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <span className="w-24 text-slate-500 font-medium">Email</span>
+                  {isEditing ? (
+                    <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-2 py-1 rounded text-xs outline-none focus:border-cyan-500" />
+                  ) : (
+                    lead.email ? (
+                      <a href={`mailto:${lead.email}`} className="text-cyan-500 hover:underline flex items-center"><Mail className="w-3 h-3 mr-1" />{lead.email}</a>
+                    ) : "—"
+                  )}
+                </div>
               </div>
             </section>
 
@@ -144,17 +238,25 @@ export default function LeadDetailDrawer({ lead, onClose, onRequireBooking }) {
                 <Camera className="w-4 h-4 mr-2" /> Event Details
               </h3>
               <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3 text-sm">
-                <div className="flex items-start">
+                <div className="flex items-center">
                   <span className="w-24 text-slate-500 font-medium">Shoot Type</span>
-                  <span className="text-slate-900 dark:text-white">{lead.shootType || "—"}</span>
+                  {isEditing ? (
+                    <input type="text" value={editShootType} onChange={(e) => setEditShootType(e.target.value)} className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-2 py-1 rounded text-xs outline-none focus:border-cyan-500" />
+                  ) : (
+                    <span className="text-slate-900 dark:text-white">{lead.shootType || "—"}</span>
+                  )}
                 </div>
-                <div className="flex items-start">
+                <div className="flex items-center">
                   <span className="w-24 text-slate-500 font-medium">Date</span>
-                  <span className="text-slate-900 dark:text-white flex items-center">
-                    {lead.eventDate ? (
-                      <><Calendar className="w-3 h-3 mr-2 text-emerald-500" /> {new Date(lead.eventDate).toLocaleDateString()}</>
-                    ) : "—"}
-                  </span>
+                  {isEditing ? (
+                    <input type="date" value={editEventDate} onChange={(e) => setEditEventDate(e.target.value)} className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-2 py-1 rounded text-xs outline-none focus:border-cyan-500" />
+                  ) : (
+                    <span className="text-slate-900 dark:text-white flex items-center">
+                      {lead.eventDate ? (
+                        <><Calendar className="w-3 h-3 mr-2 text-emerald-500" /> {new Date(lead.eventDate).toLocaleDateString()}</>
+                      ) : "—"}
+                    </span>
+                  )}
                 </div>
                 {lead.package?.variantName && (
                   <div className="flex items-start mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
@@ -168,14 +270,18 @@ export default function LeadDetailDrawer({ lead, onClose, onRequireBooking }) {
             </section>
 
             {/* Message from Client */}
-            {lead.message && (
+            {(lead.message || isEditing) && (
               <section>
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center">
                   <MessageSquare className="w-4 h-4 mr-2" /> Original Message
                 </h3>
-                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-sm text-slate-700 dark:text-slate-300 italic">
-                  "{lead.message}"
-                </div>
+                {isEditing ? (
+                  <textarea rows={3} value={editMessage} onChange={(e) => setEditMessage(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-3 py-2 rounded-lg text-xs outline-none focus:border-cyan-500 resize-none" />
+                ) : (
+                  <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-sm text-slate-700 dark:text-slate-300 italic">
+                    "{lead.message}"
+                  </div>
+                )}
               </section>
             )}
 
