@@ -2,7 +2,7 @@ const Payment = require("../models/Payment.model");
 const Invoice = require("../models/Invoice.model");
 const Booking = require("../models/Booking.model");
 const SiteSettings = require("../models/SiteSettings.model");
-const PDFDocument = require("pdfkit");
+const { compileHtmlToPdf } = require("../utils/pdfCompiler");
 const cloudinary = require("../config/cloudinary");
 const sendEmail = require("../utils/sendEmail");
 const Lead = require("../models/Lead.model");
@@ -14,8 +14,72 @@ const generateInvoiceNumber = async () => {
   return `PIXEL-INV-${startNum + count + 1}`;
 };
 
+const formatInvoiceData = (invoiceObj, booking, payments, siteSettings) => {
+  const dateFormatted = new Date(invoiceObj.date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+
+  const eventDateFormatted = booking.eventDate
+    ? new Date(booking.eventDate).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
+    : "—";
+
+  const paymentsFormatted = payments.map((p, index) => ({
+    index: index + 1,
+    date: new Date(p.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }),
+    type: p.type,
+    method: p.method || "N/A",
+    amount: p.amount.toFixed(2)
+  }));
+
+  const logoLetters = siteSettings.businessName
+    ? siteSettings.businessName.split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase()
+    : "SP";
+
+  const termsList = siteSettings.termsAndConditions || [];
+
+  const totalAmountPaid = payments.reduce((acc, curr) => acc + curr.amount, 0);
+
+  return {
+    logoUrl: siteSettings.logo || "",
+    logoLetters,
+    businessName: siteSettings.businessName || "STUDIO PRO",
+    businessNameUppercase: (siteSettings.businessName || "STUDIO PRO").toUpperCase(),
+    contactAddress: siteSettings.contact?.address || "",
+    contactPhone: siteSettings.contact?.phone || "",
+    contactEmail: siteSettings.contact?.email || "",
+    docTitle: "Payment Invoice & Receipt",
+    docSub: "Receipt of payment confirmation",
+    invoiceNumber: invoiceObj.invoiceNumber,
+    date: dateFormatted,
+    paymentStatus: invoiceObj.type === "Final" ? "Fully Paid" : "Partially Paid",
+    clientName: booking.clientName || "N/A",
+    clientPhone: booking.leadId?.phone || "N/A",
+    shootType: booking.shootType || "—",
+    eventDate: eventDateFormatted,
+    payments: paymentsFormatted,
+    amount: invoiceObj.amount.toFixed(2),
+    totalAmountPaid: totalAmountPaid.toFixed(2),
+    totalProjectCost: booking.totalAmount.toFixed(2),
+    remainingBalance: booking.remainingAmount.toFixed(2),
+    termsList,
+    colors: {
+      primary: siteSettings.colors?.primary || "#6B1F2A",
+      secondary: siteSettings.colors?.secondary || "#4A1620",
+      accent: siteSettings.colors?.accent || "#B8924A"
+    },
+    stampUrl: siteSettings.stamp || "",
+    signatureUrl: siteSettings.signature || "",
+    qrCodeUrl: siteSettings.qrCode || ""
+  };
+};
+
 // Helper: generate PDF buffer and upload to Cloudinary
-const generateAndUploadInvoicePDF = async (invoiceObj, booking, payments, siteSettings) => {
+const generateAndUploadInvoicePDF = async (invoiceObj, booking, payments, siteSettings, tenantId) => {
+  const data = formatInvoiceData(invoiceObj, booking, payments, siteSettings);
+  const pdfBuffer = await compileHtmlToPdf(tenantId, "invoice", data);
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 });
     let buffers = [];
@@ -40,7 +104,7 @@ const generateAndUploadInvoicePDF = async (invoiceObj, booking, payments, siteSe
     if (siteSettings?.contact?.email) {
       doc.text(`Email: ${siteSettings.contact.email}`, { align: "right" });
     }
-    
+
     doc.fontSize(20).text("INVOICE", 50, 50);
     doc.fontSize(10).text(`Invoice No: ${invoiceObj.invoiceNumber}`, 50, 80);
     doc.text(`Date: ${new Date(invoiceObj.date).toLocaleDateString()}`);
@@ -59,7 +123,7 @@ const generateAndUploadInvoicePDF = async (invoiceObj, booking, payments, siteSe
 
     doc.fontSize(10).text("Date".padEnd(20) + "Type".padEnd(20) + "Amount");
     doc.text("------------------------------------------------------------------");
-    
+
     // For Final Invoice, list ALL payments. For others, just this payment
     let paymentsToDisplay = [payments[payments.length - 1]]; // default: just this payment
     if (invoiceObj.type === "Final") {
@@ -73,7 +137,7 @@ const generateAndUploadInvoicePDF = async (invoiceObj, booking, payments, siteSe
     });
 
     doc.text("------------------------------------------------------------------");
-    
+
     const totalPaid = payments.reduce((acc, curr) => acc + curr.amount, 0);
     doc.moveDown();
     doc.fontSize(12).text(`Total Paid: Rs. ${totalPaid}`);
@@ -116,7 +180,7 @@ exports.addPayment = async (req, res) => {
 
     // Fetch existing payments
     const existingPayments = await Payment.find({ bookingId }).sort({ date: 1 });
-    
+
     // Determine Type
     let type = "Partial";
     if (existingPayments.length === 0) {
@@ -133,7 +197,7 @@ exports.addPayment = async (req, res) => {
     });
 
     const savedPayment = await newPayment.save();
-    
+
     // Update booking remaining amount and advance amounts
     // Note: If type is advance, advanceAmount was already recorded in create booking theoretically,
     // but building this system incrementally, let's just subtract from remaining.
@@ -156,7 +220,7 @@ exports.addPayment = async (req, res) => {
 
     // Generate PDF
     const siteSettings = await SiteSettings.findOne();
-    const pdfUrl = await generateAndUploadInvoicePDF(newInvoiceObj, booking, allPayments, siteSettings);
+    const pdfUrl = await generateAndUploadInvoicePDF(newInvoiceObj, booking, allPayments, siteSettings, req.tenant);
 
     const newInvoice = new Invoice({
       ...newInvoiceObj,
@@ -164,7 +228,7 @@ exports.addPayment = async (req, res) => {
     });
 
     const savedInvoice = await newInvoice.save();
-    
+
     savedPayment.invoiceId = savedInvoice._id;
     await savedPayment.save();
 
@@ -199,7 +263,7 @@ exports.sendInvoiceEmail = async (req, res) => {
     const { email } = req.body;
     const invoice = await Invoice.findById(req.params.id);
     if (!invoice) return res.status(404).json({ success: false, message: "Invoice not found" });
-    
+
     await sendEmail({
       email,
       subject: `Invoice ${invoice.invoiceNumber} from our Studio`,

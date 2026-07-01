@@ -36,7 +36,7 @@ export default function SendQuotationDrawer({ isOpen, onClose, lead, quotations,
 
     const quote = quotations.find(q => q._id === selectedQuoteId);
 
-    const pdfUrl = `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/quotations/pdf/${quote._id}`;
+    const pdfUrl = `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/quotations/pdf/${quote._id}?tenantDomain=${window.location.hostname}`;
     const text = `Hello ${lead.name}!%0A%0AWe have prepared your quotation (${quote.quotationNumber}) for your upcoming shoot.%0A%0ATotal Amount: Rs. ${quote.total}%0A%0AYou can review and download the official PDF quotation here: ${pdfUrl}%0A%0ALet us know if you have any questions!`;
 
     window.open(`https://wa.me/${cleanNum}?text=${text}`, '_blank');
