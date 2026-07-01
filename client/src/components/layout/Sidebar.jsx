@@ -59,7 +59,7 @@ const Sidebar = ({ isOpen, isMobileOpen, closeMobile }) => {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             className="text-xl font-bold tracking-tight text-slate-900 dark:text-white"
           >
-            LensCRM
+            SnapSprint
           </motion.span>
         )}
       </div>

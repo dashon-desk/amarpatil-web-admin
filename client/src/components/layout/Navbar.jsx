@@ -131,7 +131,7 @@ const Navbar = ({ toggleSidebar, openMobileMenu, sidebarOpen }) => {
 
         {/* Mobile Header Title */}
         <div className="lg:hidden flex items-center gap-2 font-bold text-xl text-slate-900 dark:text-white tracking-wide">
-          LensCRM
+          SnapSprint
         </div>
       </div>
 

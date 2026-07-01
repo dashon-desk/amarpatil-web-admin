@@ -45,6 +45,11 @@ const AdminLayout = () => {
           <Outlet />
         </main>
         
+        {/* Footer Branding */}
+        <footer className="w-full text-center py-4 mt-auto text-xs font-medium text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800">
+          Designed and Developed by Dashon Solutions
+        </footer>
+        
         {/* Bottom Navigation for Mobile */}
         <MobileNav openMenu={() => setMobileMenuOpen(true)} />
       </div>
